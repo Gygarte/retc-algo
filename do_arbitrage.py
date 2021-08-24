@@ -40,29 +40,30 @@ def do_arbitrage(session):
     bear_ask, bear_bid, bull_ask, bull_bid, retc_ask, retc_bid, usd_ask, usd_bid  = parse_stock_info(get_stock_info(session, stock_list))
     
     #verify the conditions and execute trades
-    if first_condition(bear_ask,bull_ask, usd_bid, retc_bid):
+    if first_condition(bear_ask,bull_ask, usd_bid, retc_bid) or second_condition(bear_bid,bull_bid,usd_ask,retc_ask):
         #open positions
         response_open_short_retc = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'RETC', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
+        usd_de_vanzare = 1000 * usd_ask
+        response_open_long_usd = session.post('http://localhost:9999/v1/orders',
+                            params={'ticker':'USD', 'type':'MARKET', 'quantity':usd_de_vanzare, 'action':'SELL'})
         response_open_long_bull = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'BULL', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
         response_open_long_bear = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
-        response_open_long_usd = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
-        '''
-        #close positions
-        response_close_short_retc = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'RETC', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
-        response_close_long_bull = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'BULL', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
-        response_close_long_bear = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
-        response_close_long_usd = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
-        '''
-        print('Arbitraje on the first rule!')
         
+        response_open_long_bull = session.post('http://localhost:9999/v1/orders',
+                            params={'ticker':'BULL', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
+        response_open_long_bear = session.post('http://localhost:9999/v1/orders',
+                            params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
+        usd_de_cumparare = (1000 * bull_bid+ 1000 * bear_bid) * usd_bid
+        response_open_long_usd = session.post('http://localhost:9999/v1/orders',
+                            params={'ticker':'USD', 'type':'MARKET', 'quantity':usd_de_cumparare, 'action':'BUY'})
+        response_open_short_retc = session.post('http://localhost:9999/v1/orders',
+                            params={'ticker':'RETC', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
+    
+        print('Arbitraje!')
+    '''  
     elif second_condition(bear_bid,bull_bid,usd_ask,retc_ask):
         #open positions because of the atbitrage
         response_open_short_retc = session.post('http://localhost:9999/v1/orders',
@@ -73,20 +74,10 @@ def do_arbitrage(session):
                             params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
         response_open_long_usd = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
-        '''
-        #close positions because of the arbitrage
-        response_close_short_retc = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'RETC', 'type':'MARKET', 'quantity':9999, 'action':'SELL'})
-        response_close_long_bull = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'BULL', 'type':'MARKET', 'quantity':9999, 'action':'BUY'})
-        response_close_long_bear = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'BEAR', 'type':'MARKET', 'quantity':9999, 'action':'BUY'})
-        response_close_long_usd = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'USD', 'type':'MARKET', 'quantity':9999, 'action':'BUY'})
-        '''
+        
         print('Arbitrage on the second rule!')
     else:
         print("No arbitrage, yet!")
 
-
+    '''
 
