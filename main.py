@@ -1,6 +1,7 @@
 import requests
 import signal
 from do_arbitrage import do_arbitrage
+from do_arbitrage import get_stock_info
 #main class for exceptions
 class APIException(Exception):
     pass
@@ -32,7 +33,7 @@ def main():
             
         
             do_arbitrage(session)
-            
+            #get_stock_info(session, ['BEAR', 'BULL', 'RETC', 'USD'])
             #update the tick
             tick = get_tick(session)
 
