@@ -1,10 +1,27 @@
 
-def get_stock_info():
-    pass
+def get_stock_info(session, stocks):
+    info = []
+    for stock in stocks:
+        info_response = session.get('http://localhost:9999/v1/securities', params={'ticker':stock})
+        if info_response.status_code == 200:
+            info_parse = info_response.json()[0]
+            for index in ['ask', 'bid']:
+                info.append(info_parse[index])  
+    return tuple(info)
+
+def parse_stock_info(stocks):
+    bear_ask = stocks[0]
+    bear_bid = stocks[1]
+    bull_ask = stocks[2]
+    bull_bid = stocks[3]
+    retc_ask = stocks[4]
+    retc_bid = stocks[5]
+    usd_ask = stocks[6]
+    usd_bid = stocks[7]
+    return bear_ask, bear_bid, bull_ask, bull_bid, retc_ask, retc_bid, usd_ask, usd_bid
 
 def first_condition(bear_ask, bull_ask, usd_ask, retc_bid):
     return True if (retc_bid < (bear_ask + bull_ask) * usd_ask) else False
-
 
 def second_condition(bear_bid,bull_bid,usd_bid,retc_ask):
     return True if (retc_ask > (bear_bid + bull_bid) * usd_bid) else False
@@ -13,11 +30,13 @@ def second_condition(bear_bid,bull_bid,usd_bid,retc_ask):
 
 #main function for arbitrage handling
 def do_arbitrage(session):
+    #stock list to work with
+    stock_list = ['BEAR', 'BULL', 'RETC', 'USD']
     #accept the data
-    bear_ask, bear_bid, bull_ask, bull_bid, usd_ask, usd_bid,retc_ask, retc_bid = get_stock_info()
+    bear_ask, bear_bid, bull_ask, bull_bid, retc_ask, retc_bid, usd_ask, usd_bid  = parse_stock_info(get_stock_info(session, stock_list))
     
     #verify the conditions and execute trades
-    if first_condition() is False:
+    if first_condition(bear_ask,bull_ask, usd_ask, retc_bid) is False:
         #open positions because of the atbitrage
         response_open_short_retc = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'RETC', 'type':'MARKET', 'quantity':9999, 'action':'SELL'})
@@ -38,7 +57,7 @@ def do_arbitrage(session):
                             params={'ticker':'USD', 'type':'MARKET', 'quantity':9999, 'action':'SELL'})
         print('Arbitraje on the first rule!')
         
-    elif second_condition() is False:
+    elif second_condition(bear_bid,bull_bid,usd_bid,retc_ask) is False:
         #open positions because of the atbitrage
         response_open_short_retc = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'RETC', 'type':'MARKET', 'quantity':9999, 'action':'BUY'})
