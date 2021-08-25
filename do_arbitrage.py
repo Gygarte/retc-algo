@@ -51,6 +51,24 @@ def do_arbitrage(session):
                             params={'ticker':'BULL', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
         response_open_long_bear = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
+<<<<<<< Updated upstream
+=======
+        response_open_long_usd = session.post('http://localhost:9999/v1/orders',
+                            params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
+        print("First Rule: position opened!")
+        
+        if first_close_condition(bear_ask, bull_ask, usd_bid, retc_bid) or second_condition(bear_bid,bull_bid,usd_ask,retc_ask):
+            #close positions
+            response_close_short_retc = session.post('http://localhost:9999/v1/orders',
+                                params={'ticker':'RETC', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
+            response_close_long_bull = session.post('http://localhost:9999/v1/orders',
+                                params={'ticker':'BULL', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
+            response_close_long_bear = session.post('http://localhost:9999/v1/orders',
+                                params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
+            response_close_long_usd = session.post('http://localhost:9999/v1/orders',
+                                params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
+            print("First Rule: position closed!")
+>>>>>>> Stashed changes
         
         response_open_long_bull = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'BULL', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
@@ -74,8 +92,24 @@ def do_arbitrage(session):
                             params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
         response_open_long_usd = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
+<<<<<<< Updated upstream
         
         print('Arbitrage on the second rule!')
+=======
+        print("Second Rule: position opened!")
+        if second_close_condition(bear_bid,bull_bid,usd_ask,retc_ask) or first_condition(bear_ask,bull_ask, usd_bid, retc_bid) :
+            #close positions because of the arbitrage
+            response_close_short_retc = session.post('http://localhost:9999/v1/orders',
+                                params={'ticker':'RETC', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
+            response_close_long_bull = session.post('http://localhost:9999/v1/orders',
+                                params={'ticker':'BULL', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
+            response_close_long_bear = session.post('http://localhost:9999/v1/orders',
+                                params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
+            response_close_long_usd = session.post('http://localhost:9999/v1/orders',
+                                params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
+            print("Second Rule: position closed!")
+        
+>>>>>>> Stashed changes
     else:
         print("No arbitrage, yet!")
 
