@@ -55,9 +55,13 @@ def order_info(order_response):
     prices.append(order_info['vwap'])
     return quantity, prices
     
+def log_info(message, tick):
+    with open('./log.txt', 'w') as log:
+        log.write(message)
+
     
 #main function for arbitrage handling
-def do_arbitrage(session):
+def do_arbitrage(session, tick):
     #stock list to work with
     stock_list = ['BEAR', 'BULL', 'RETC', 'USD']
     #accept the data
@@ -68,15 +72,19 @@ def do_arbitrage(session):
         #open positions
         response_open_short_retc = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'RETC', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
-        #quantity, price = order_info(response_open_short_retc)
+        retc_quantity, retc_price = order_info(response_open_short_retc)
         #usd_disponibil = cash_flow(quantity, price, 'SELL'))
         response_open_long_bull = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'BULL', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
         response_open_long_bear = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
         response_open_long_usd = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
-        
+                            params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
+        bull_quantity, bull_price = order_info(response_open_long_bull)
+        bear_quantity, bear_price = order_info(response_open_long_bear)
+        usd_quantity, usd_price = order_info(response_open_long_usd)
+        log_info('''First Rule Arbitrage\n: 
+                 SELL (RETC) -> {}; BUY (BULL) -> {} (BEAR) -> {} (USD) - > {}'''.format(retc_price, bull_price, bear_price, usd_price), tick)
         
         if first_close_condition(bear_ask, bull_ask, usd_bid, retc_bid):
             #close positions
@@ -88,7 +96,7 @@ def do_arbitrage(session):
                                 params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
             response_close_long_usd = session.post('http://localhost:9999/v1/orders',
                                 params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
-        print('Arbitraje on the first rule!')
+            print('First Rule: position closed!')
         
     elif second_condition(bear_bid,bull_bid,usd_ask,retc_ask):
         #open positions because of the atbitrage
@@ -100,6 +108,7 @@ def do_arbitrage(session):
                             params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
         response_open_long_usd = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
+        print('Second Rule: position opened!')
         
         if second_close_condition(bear_bid,bull_bid,usd_ask,retc_ask):
             #close positions because of the arbitrage
@@ -111,7 +120,6 @@ def do_arbitrage(session):
                                 params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
             response_close_long_usd = session.post('http://localhost:9999/v1/orders',
                                 params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
-        
-        print('Arbitrage on the second rule!')
+            print('Second Rule: position closed!')
     else:
         print("No arbitrage, yet!")

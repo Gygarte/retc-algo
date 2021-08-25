@@ -1,7 +1,7 @@
 import requests
 import signal
 from do_arbitrage import do_arbitrage
-from do_arbitrage import get_stock_info
+from protection import close_all
 #main class for exceptions
 class APIException(Exception):
     pass
@@ -29,9 +29,13 @@ def main():
     with requests.Session() as session:
         session.headers.update(API_KEY)
         tick = get_tick(session)
-        while tick >= 1 and tick <= 299 and not shutdown:
+        while tick >= 1 and tick <= 300 and not shutdown:
             
-            do_arbitrage(session)
+            
+            if tick <= 275:
+                do_arbitrage(session, tick)
+            else:
+                close_all(session)
             tick = get_tick(session)
 
 
