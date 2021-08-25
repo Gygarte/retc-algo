@@ -1,7 +1,7 @@
 import requests
 import signal
 from do_arbitrage import do_arbitrage
-from do_arbitrage import parse_stock_info, cash_flow, get_stock_info, order_info
+from do_arbitrage import get_stock_info
 #main class for exceptions
 class APIException(Exception):
     pass
@@ -31,24 +31,7 @@ def main():
         tick = get_tick(session)
         while tick >= 1 and tick <= 299 and not shutdown:
             
-        
-            #do_arbitrage(session)
-            #get_stock_info(session, ['BEAR', 'BULL', 'RETC', 'USD'])
-            #update the tick
-            stock_list = ['BEAR', 'BULL', 'RETC', 'USD']
-            bear_ask, bear_bid, bull_ask, bull_bid, retc_ask, retc_bid, usd_ask, usd_bid  = parse_stock_info(get_stock_info(session, stock_list))
-            response_open_short_retc = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'RETC', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
-            quantity, price = order_info(response_open_short_retc)
-            print(cash_flow(quantity, price, 'SELL'))
-            
-            
-            
-            
-            
-            
-            
-            
+            do_arbitrage(session)
             tick = get_tick(session)
 
 
