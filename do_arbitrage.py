@@ -1,3 +1,5 @@
+from statistics import mean
+
 
 def get_stock_info(session, stocks):
     info = []
@@ -25,13 +27,20 @@ def parse_stock_info(stocks):
     return bear_ask, bear_bid, bull_ask, bull_bid, retc_ask, retc_bid, usd_ask, usd_bid
 
 def first_condition(bear_ask, bull_ask, usd_bid, retc_bid):
-    return True if ((retc_bid - 0.12) * usd_bid > bear_ask + bull_ask) else False
+    return True if ((retc_bid - 0.06) * usd_bid > bear_ask + bull_ask) else False
+
+def _first_condition(retc_bid, bear_ask, bull_ask, usd_ask):
+    return True if retc_bid -0.02 > (bear_ask + bull_ask) * usd_ask - 0.04 else False
+
+def _second_condition(retc_ask, bear_bid, bull_bid, usd_bid):
+    return True if retc_ask - 0.02 < (bear_bid + bull_bid) * usd_bid - 0.04 else False
+
 
 def second_condition(bear_bid,bull_bid,usd_ask,retc_ask):
-    return True if ((retc_ask + 0.12) < (bear_bid + bull_bid) * usd_ask)  else False
+    return True if ((retc_ask + 0.06) < (bear_bid + bull_bid) * usd_ask)  else False
 
-def first_close_condition(bear_ask, bull_ask, usd_bid, retc_bid):
-    return True if ((retc_bid - 0.06) * usd_bid == bear_ask + bull_ask) else False
+def _close_condition(bear_ask, bear_bid, retc_ask, bull_ask, bull_bid, usd_bid, usd_ask, retc_bid):
+    return True if ((mean([retc_bid, retc_ask]) - 0.06) * mean([usd_bid, usd_ask]) == mean([bear_ask, bear_bid]) + mean([bull_ask, bull_bid])) else False
 
 def second_close_condition(bear_bid,bull_bid,usd_ask,retc_ask):
     return True if ((retc_ask + 0.06) == (bear_bid + bull_bid) * usd_ask)  else False
@@ -68,25 +77,19 @@ def do_arbitrage(session, tick):
     bear_ask, bear_bid, bull_ask, bull_bid, retc_ask, retc_bid, usd_ask, usd_bid  = parse_stock_info(get_stock_info(session, stock_list))
     
     #verify the conditions and execute trades
-    if first_condition(bear_ask,bull_ask, usd_bid, retc_bid):
+    if first_condition(bear_ask, bull_ask, usd_bid, retc_bid):
         #open positions
         response_open_short_retc = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'RETC', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
-        retc_quantity, retc_price = order_info(response_open_short_retc)
-        #usd_disponibil = cash_flow(quantity, price, 'SELL'))
         response_open_long_bull = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'BULL', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
         response_open_long_bear = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
         response_open_long_usd = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
-        bull_quantity, bull_price = order_info(response_open_long_bull)
-        bear_quantity, bear_price = order_info(response_open_long_bear)
-        usd_quantity, usd_price = order_info(response_open_long_usd)
-        log_info('''First Rule Arbitrage\n: 
-                 SELL (RETC) -> {}; BUY (BULL) -> {} (BEAR) -> {} (USD) - > {}'''.format(retc_price, bull_price, bear_price, usd_price), tick)
+                            params={'ticker':'USD', 'type':'MARKET', 'quantity':1000 * usd_ask, 'action':'BUY'})
         
-        if first_close_condition(bear_ask, bull_ask, usd_bid, retc_bid):
+        
+        if _close_condition(bear_ask, bear_bid, retc_ask, bull_ask, bull_bid, usd_bid, usd_ask, retc_bid):
             #close positions
             response_close_short_retc = session.post('http://localhost:9999/v1/orders',
                                 params={'ticker':'RETC', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
@@ -95,7 +98,7 @@ def do_arbitrage(session, tick):
             response_close_long_bear = session.post('http://localhost:9999/v1/orders',
                                 params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
             response_close_long_usd = session.post('http://localhost:9999/v1/orders',
-                                params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
+                                params={'ticker':'USD', 'type':'MARKET', 'quantity':1000 * usd_bid, 'action':'SELL'})
             print('First Rule: position closed!')
         
     elif second_condition(bear_bid,bull_bid,usd_ask,retc_ask):
@@ -107,10 +110,10 @@ def do_arbitrage(session, tick):
         response_open_long_bear = session.post('http://localhost:9999/v1/orders',
                             params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
         response_open_long_usd = session.post('http://localhost:9999/v1/orders',
-                            params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
+                            params={'ticker':'USD', 'type':'MARKET', 'quantity':1000 * usd_bid, 'action':'SELL'})
         print('Second Rule: position opened!')
         
-        if second_close_condition(bear_bid,bull_bid,usd_ask,retc_ask):
+        if _close_condition(bear_ask, bear_bid, retc_ask, bull_ask, bull_bid, usd_bid, usd_ask, retc_bid):
             #close positions because of the arbitrage
             response_close_short_retc = session.post('http://localhost:9999/v1/orders',
                                 params={'ticker':'RETC', 'type':'MARKET', 'quantity':1000, 'action':'SELL'})
@@ -119,7 +122,15 @@ def do_arbitrage(session, tick):
             response_close_long_bear = session.post('http://localhost:9999/v1/orders',
                                 params={'ticker':'BEAR', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
             response_close_long_usd = session.post('http://localhost:9999/v1/orders',
-                                params={'ticker':'USD', 'type':'MARKET', 'quantity':1000, 'action':'BUY'})
+                                params={'ticker':'USD', 'type':'MARKET', 'quantity':1000 * usd_ask, 'action':'BUY'})
             print('Second Rule: position closed!')
     else:
         print("No arbitrage, yet!")
+        
+        
+        
+        
+        
+        
+        
+        

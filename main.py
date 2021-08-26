@@ -1,5 +1,7 @@
 import requests
 import signal
+
+from requests.sessions import Session
 from do_arbitrage import do_arbitrage
 from protection import close_all
 #main class for exceptions
@@ -31,12 +33,10 @@ def main():
         tick = get_tick(session)
         while tick >= 1 and tick <= 300 and not shutdown:
             
-            
-            if tick <= 275:
-                do_arbitrage(session, tick)
-            else:
-                close_all(session)
+            do_arbitrage(session, tick)
+                
             tick = get_tick(session)
+            
 
 
 #executor of the main function and signal handler
